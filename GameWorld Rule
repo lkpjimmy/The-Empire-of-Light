@@ -1,0 +1,33 @@
+Class GameWorld
+-gridId (should store playerID? or playerID store country?)
+-xCoord
+-yCoord
+
+Class GameObjects
+-land
+-ocean
+-country
+-pier
+
+Class Player
+-playerID
+-armyNumber
+-country
+-xCoord
+-yCoord
+
++detectMovableGrids()
++move() (2 distances)
++detectEnemies()
++nothing()
++evolve()
++attack() (can do defense as well + no. of army dead)
+
+
+Randomize the following:
+Land : Ocean = 80% : 20% to 20% : 80%
+Other rules set later
+
+Pier rules
+Number of piers = Number of oceans * 10% - 20%
+Connected with lands
