@@ -7,9 +7,9 @@ var HexPoints;
 gameLoop();
 
 function gameLoop(){
-    buildGrid(2,2);
+    buildGrid(10,10);
     $("#hexGrid").click(function(event){clickHandler(event);});
-    console.log(svg);
+    // console.log(svg);
 }
 
 
@@ -57,8 +57,11 @@ function drawHexSVG(x,y,radius){
     return tmp.join(" ");
 }
 function clickHandler(event){
-    $(event.target).attr('style','fill:red; opacity:1;stroke:black;stroke-width:'+
-        '1px;cursor:pointer;');
+    var styles1 = 'fill:#00ff00; opacity:0.5;stroke:black;stroke-width:1px;cursor:pointer;';
+    var styles2 = 'fill:red; opacity:1;stroke:black;stroke-width:1px;cursor:pointer;';
+    $(event.target).attr('style',function(index,attr){
+        return attr == styles1 ? styles2 : styles1 ;
+    });
 }
 
 
