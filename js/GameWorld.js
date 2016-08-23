@@ -1,4 +1,5 @@
 var svg = document.getElementById('hexGrid');
+
 var x, y, row, col, pointX, pointY, theta;
 var currentX,currentY; // current selection
 var start_troop,start_coor,end_troop,end_coor,move_troop;  // for moving troops
@@ -14,7 +15,7 @@ function gameLoop(){
     // $("#hexGrid polygon").click(function(event){showDist(event);});
     $("button#add").click(function(){
         $("#hexGrid polygon,#hexGrid text").off();
-        $("#hexGrid polygon,#hexGrid text").on('click',function(event){addTroop(event);});
+        $("#hexGrid polygon, #hexGrid text").on('click',function(event){addTroop(event);});
         // console.log("start");
     });
     $("button#stop").click(function(){
@@ -22,7 +23,7 @@ function gameLoop(){
         // $("#hexGrid polygon").click(function(event){showDist(event);});
         // console.log("stop");
     });
-    $("button#move").click(function(){
+    $("button#move").click(function(){  // deal with $(svg text) later
         var flag = 0;
         $("#hexGrid polygon,#hexGrid text").off();
         $("#hexGrid polygon").on('click',function(event){
@@ -60,6 +61,7 @@ function makeHexagon(x,y,hex_x,hex_y,id){
     text.setAttribute("x",(x - radius*0.2));
     text.setAttribute("y",(y + radius*0.2));
     text.setAttribute("data-id",id);
+    // text.setAttribute('data-troop', troop);
     text.setAttribute("font-size",radius*0.7);
     text.innerHTML=troop;
     
@@ -83,6 +85,7 @@ function buildGrid(row_num,col_num){
         } 
         count++; if (count%2 == 0 && count>0) {hex_x--;}
     }
+    refreshTroop();
 }
 
 function drawHexSVG(x,y,radius){
@@ -137,25 +140,32 @@ function hexDistance(x1,y1,z1,x2,y2,z2){
     return Math.max(Math.abs(x2-x1),Math.abs(y2-y1),Math.abs(z2-z1));
 }
 function addTroop(event){
-    var troop = parseInt($(event.target).attr("data-troop"));
+    var polygon = $("svg polygon");
+    var texting = $("svg text");
     var id = parseInt($(event.target).attr("data-id"));
+    var troop = parseInt(polygon[id].getAttribute("data-troop"));
      // add troop in every click
-        troop++;
-        $(event.target).attr("data-troop",troop);
-        var texting = $("svg text");
-        texting[id].innerHTML=troop;
+    troop++;
+    polygon[id].setAttribute("data-troop",troop);
+    // texting[id].setAttribute("data-troop",troop);
+    $(event.target).attr("data-troop",troop);
+    texting[id].innerHTML=troop;
+    refreshTroop();
 }
 
 function moveTroopFrom(event){
-    start_troop = parseInt($(event.target).attr("data-troop"));
-    start_coor = returnPos(event);
+    var polygon = $("svg polygon");
+    var id = parseInt($(event.target).attr("data-id"));
+    start_troop = parseInt(polygon[id].getAttribute("data-troop"));
+    start_coor = returnPos(id);
     move_troop = start_troop;
 }
 function moveTroopTo(event){
-    end_troop = parseInt($(event.target).attr("data-troop"));
-    // console.log(end_troop);
-    end_coor = returnPos(event);
     var polygon = $("svg polygon");
+    var id = parseInt($(event.target).attr("data-id"));
+    end_troop = parseInt(polygon[id].getAttribute("data-troop"));
+    // console.log(end_troop);
+    end_coor = returnPos(id);
     var dist = hexDistance(start_coor[0],start_coor[1],start_coor[2],
         end_coor[0],end_coor[1],end_coor[2]);
     if ( dist<= moveDist && dist>0  ) {
@@ -166,12 +176,13 @@ function moveTroopTo(event){
         refreshTroop();
     }
 }
-function returnPos(event){
+function returnPos(id){
+    var polygon = $("svg polygon");
     var coor=[];
-    coor[0] = parseInt($(event.target).attr("data-x"));
-    coor[1] = parseInt($(event.target).attr("data-y"));
-    coor[2] = parseInt($(event.target).attr("data-z"));
-    coor[3] = parseInt($(event.target).attr("data-id")); 
+    coor[0] = parseInt(polygon[id].getAttribute("data-x"));
+    coor[1] = parseInt(polygon[id].getAttribute("data-y"));
+    coor[2] = parseInt(polygon[id].getAttribute("data-z"));
+    coor[3] = parseInt(polygon[id].getAttribute("data-id")); 
     return coor;
 }
 function refreshTroop(){
@@ -180,7 +191,15 @@ function refreshTroop(){
     for (var i=0; i<polygon.length; i++){
         var troop = polygon[i].getAttribute("data-troop");
         text[i].innerHTML=troop;
+        if (troop==0) { text[i].style.display = "none"; }
+        else { 
+            if (troop >=10) { 
+            var x = polygon[i].getAttribute('data-cx');
+            text[i].setAttribute("x",(x - radius*0.35));}
+            text[i].style.display = "block"; 
+        }
     }
+
 }
 
 
