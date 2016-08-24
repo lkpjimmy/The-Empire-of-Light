@@ -9,13 +9,12 @@
     
     <!-- CSS needs to be configured later -->
     <style>
-
     *
     {
         margin: 0;
         padding: 0;
+        -webkit-user-select: none;
     }
-
     .main
     {
         border: 10px solid #b6bdc3;
@@ -23,7 +22,10 @@
         justify-content: center;
         align-items: center;
     }
-    
+    svg text{
+        font-weight: bold;
+        -webkit-user-select: none;
+    }
     svg
     {
         width: 649px;   
@@ -60,7 +62,6 @@
         transform-origin: 50% 50%;
         -webkit-transform-origin: 50% 50%;
     }
-
     </style>
 </head>
     
@@ -68,6 +69,11 @@
     
     <div class="header">
         Header
+        <button id="add">Add Troop</button>
+        <button id="stop">Stop All</button>
+        <button id="move">Move</button>
+        <button id="player1">Player1</button>
+        <button id="player2">Player2</button>
     </div>
 
     <div class="main">
@@ -83,4 +89,3 @@
     <script type="text/javascript" src="js/GameWorld.js"> </script>
 
 </body>
-</html>

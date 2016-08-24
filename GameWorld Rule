@@ -31,3 +31,20 @@ Other rules set later
 Pier rules
 Number of piers = Number of oceans * 10% - 20%
 Connected with lands
+
+Attack rule
+attack Win Probab = 60%
+defense Win Probab = 70%
+
+attackRemain = attack_troop - defense_troop*70%
+defenseRemain = defense_troop - attack_troop*60%
+
+Game Cycle:
+1. Add troop (only to himself)
+2. Move troop
+3. end
+--------------------
+Limit moving steps
+pop up window to determine move troop
+
+
