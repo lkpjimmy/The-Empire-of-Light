@@ -1,7 +1,7 @@
 var svg = document.getElementById('hexGrid');
 
 var row_num = 10; var col_num = 10;
-
+var ids;
 var x, y, row, col, pointX, pointY, theta;
 
 // Current selection
@@ -58,8 +58,7 @@ function gameLoop() {
         var flag = 0;
         $("#hexGrid polygon, #hexGrid text").off();
         $("#hexGrid polygon").on('click', function(event) {
-            showDist(event);
-            if (flag == 0) {moveTroopFrom(event); flag = 1;}
+            if (flag == 0) {moveTroopFrom(event); flag = 1; showDist(event);}
             else if (flag == 1) {moveTroopTo(event); flag = 0; clearHighlight();}
         });
     });
@@ -167,8 +166,8 @@ function showDist(event) {
     // land move
     var styleDist = 'fill:red; opacity:0.5; stroke:black; stroke-width:1px; cursor:pointer;';
     var polygon = $("#hexGrid polygon");
-    var cid = parseInt($(event.target).attr('data-id'));
-    var ids = findMoveDist(cid);
+    var cid = parseInt($(event.target).attr('data-id'));   // starting point id
+    ids = findMoveDist(cid);
     // console.log(polygon[0].getAttribute("data-x"));
     // console.log($(event.target));
     // currentX = $(event.target).attr("data-x");
@@ -244,12 +243,14 @@ function addTroop(event) {
 	  }
 }
 
-function moveTroopFrom(event) {
+function moveTroopFrom(event) {        // move troop from starting point
     var polygon = $("svg polygon");
     start_id = parseInt($(event.target).attr("data-id"));
     start_troop = parseInt(polygon[start_id].getAttribute("data-troop"));
     start_coor = returnPos(start_id);
     move_troop = start_troop;
+        console.log("from:"+ids);
+
 }
 
 function moveTroopTo(event) {
@@ -257,11 +258,15 @@ function moveTroopTo(event) {
     end_id = parseInt($(event.target).attr("data-id"));
     end_troop = parseInt(polygon[end_id].getAttribute("data-troop"));
     end_coor = returnPos(end_id);
-    var dist = hexDistance(start_coor[0], start_coor[1], start_coor[2], end_coor[0], end_coor[1], end_coor[2]);
-    if (dist <= moveDist && dist > 0) {
+    // var dist = hexDistance(start_coor[0], start_coor[1], start_coor[2], end_coor[0], end_coor[1], end_coor[2]);
+        console.log("start_id="+start_id);
+        console.log("end_id="+end_id);
+        console.log(ids);
+    for (var i=0;i<ids.length; i++){
+    if (end_id==ids[i]) {
         attackJudge(start_id, end_id, move_troop);
         refreshTroop();
-    }
+    }}
 }
 
 function returnPos(id) {
@@ -320,18 +325,17 @@ function mapGenerator() {
                 groundMap[i][j] = 1; 
             }
     }}
-    console.log(groundMap);
     return groundMap;
 }
 
 function findMoveDist(cid) {
-    var id1 = []; var id2 = []; var ids = [];
+    var id1 = []; var id2 = []; ids = [];
 
     var polygon = $("svg polygon");
     for (var i = 0; i < polygon.length; i++) {
-    	var land = polygon[i].getAttribute("data-land");
+    	var land = polygon[i].getAttribute("data-land"); // data-land=1:land, 0:water
     	if (hexDistID(cid,i) == 1 && land == "1") {
-            id1.push(i); 
+            id1.push(i);   // distance 1's id 
         }
     }
     for (var i = 0; i < polygon.length; i++) {
@@ -339,15 +343,14 @@ function findMoveDist(cid) {
             var node = id1[j];
 	    	var land = polygon[i].getAttribute("data-land");
 	    	if (hexDistID(i,node) == 1 && land == "1" && i != cid) {
-                id2.push(i);
+                id2.push(i);  // distance 2's id
             }
         }
     }
 
     function logging(v1, v2, set) {
-        ids.push(v1);
+        ids.push(v1);   // turn Set object to normal array
     }
-
     new Set(id1.concat(id2)).forEach(logging);
 
     return ids;
@@ -359,34 +362,34 @@ function attackJudge(attackID, defenseID, move) {
     var result = [];
 	var user1 = polygon[attackID].getAttribute("data-player");
 	var user2 = polygon[defenseID].getAttribute("data-player");
-	var army1 = polygon[attackID].getAttribute("data-player");
-	var army2 = polygon[defenseID].getAttribute("data-player");
+	var army1 = parseInt(polygon[attackID].getAttribute("data-troop"));
+	var army2 = parseInt(polygon[defenseID].getAttribute("data-troop"));
 
-	if (user1 == user2 || user2 == -1) {
-		result[0] = army1 - move;
-        result[1] = army2 + move;
+	if (user1 == user2 || user2 == -1) {   // see if same person / not occupied
+		result[0] = army1 - move;     // move = troop moved    start
+        result[1] = army2 + move;       // end
 
-		if (result[0] == 0) { 
+		if (result[0] == 0) {    
             polygon[attackID].setAttribute('data-player', -1); 
         }
 		if (user2 == -1) { 
             polygon[defenseID].setAttribute('data-player', user1); 
         }
-	} else {
+	} else if (user1 != user2){    
 		var attackRemain = Math.round(move - army2 * defensePercent);
 		var defenseRemain = Math.round(army2 - move * attackPercent);
 		if (attackRemain < 0) {
             attackRemain = 0;
-        }	
+        }	else if (defenseRemain<0) { defenseRemain=0;}
 
 		if (defenseRemain <= 0) {
             // Attack wins!
 			result[0] = army1 - move;
             result[1] = attackRemain;
 			polygon[defenseID].setAttribute('data-player', user1);
-		} else {
+		} else if(defenseRemain>0) {
             // Defense wins!
-			result[0] = army1 + attackRemain;		
+			result[0] = army1 -move + attackRemain;		
             result[1] = defenseRemain;
         }
 	}
