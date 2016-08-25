@@ -20,12 +20,11 @@ var HexPoints;
 var groundMap;
 
 var player1 = {
-    id: 1, color:'#5555ee', troop: 0, landOccupied: 0
+    id: 1, color:'#5555ee', troop: 0, land: 0, landIDs:[]
 };
 var player2 = {
-    id: 2, color:'orange', troop: 0, landOccupied: 0
+    id: 2, color:'orange', troop: 0, land: 0, landIDs:[]
 };
-
 var PlayerList = [player1, player2];
 // drag and drop
 var mx,my,oldMx,oldMy;
@@ -40,6 +39,7 @@ gameLoop();
 
 function gameLoop() {
     buildGrid(row_num, col_num);
+    playerGetLand();
     // $("#hexGrid polygon").click(function(event){showDist(event);});
     $("button#player1").css({"background-color":"yellow"}); player = 1;
 
@@ -63,11 +63,15 @@ function gameLoop() {
     	$("button").not("button#player1, button#player2").css({"background-color":"white"});
         // Deal with $(svg text) later
         $("button#move").css({"background-color":"yellow"}); 
-        var flag = 0;
+        var flag = 0; 
         $("#hexGrid polygon, #hexGrid text").off();
         $("#hexGrid polygon").on('click', function(event) {
-            if (flag == 0) {moveTroopFrom(event); flag = 1; showDist(event);}
-            else if (flag == 1) {moveTroopTo(event); flag = 0; clearHighlight();}
+            if (flag == 0 ) {
+                // only allow players to control their troops
+                if (moveTroopFrom(event)){  showDist(event); flag = 1;} 
+                else { flag = 0;}
+            } else if (flag == 1) {
+                moveTroopTo(event); clearHighlight(); flag = 0;}
         });
     });
 
@@ -198,9 +202,9 @@ function clearHighlight() {
     } 
 }
 
-function hexDistance(x1, y1, z1, x2, y2, z2) {
-    return Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1), Math.abs(z2 - z1));
-}
+// function hexDistance(x1, y1, z1, x2, y2, z2) {
+//     return Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1), Math.abs(z2 - z1));
+// }
 
 function hexDistID(id1, id2) {
     var polygon = $("svg polygon");
@@ -217,26 +221,33 @@ function addTroop(event) {
     var polygon = $("svg polygon");
     var texting = $("svg text");
     var id = parseInt($(event.target).attr("data-id"));
-    if (polygon[id].getAttribute('data-land') == "1" && player > 0) {
+    var who = parseInt(polygon[id].getAttribute('data-player'));
+    if (polygon[id].getAttribute('data-land') == "1" && player > 0 &&
+        who==player) {
         var troop = parseInt(polygon[id].getAttribute("data-troop"));
 	    // Add troop in every click
 	    troop++;
-
 	    polygon[id].setAttribute("data-troop",troop);
-	 	polygon[id].setAttribute("data-player",player);
+
+	 	// polygon[id].setAttribute("data-player",player);
 	    // texting[id].setAttribute("data-troop", troop);
 	    // $(event.target).attr("data-troop", troop);
-	    texting[id].innerHTML = troop;
+	    // texting[id].innerHTML = troop;
 	    refreshTroop();
 	  }
 }
 
 function moveTroopFrom(event) {        // move troop from starting point
     var polygon = $("svg polygon");
-    start_id = parseInt($(event.target).attr("data-id"));
-    start_troop = parseInt(polygon[start_id].getAttribute("data-troop"));
-    move_troop = start_troop;
-        console.log("from:"+ids);
+    start_player = parseInt($(event.target).attr("data-player"));
+    if (start_player==player){
+        start_id = parseInt($(event.target).attr("data-id"));
+        start_troop = parseInt(polygon[start_id].getAttribute("data-troop"));
+        move_troop = start_troop;
+        return true;
+    }
+        // console.log("from:"+ids);
+    return false;
 }
 
 function moveTroopTo(event) {
@@ -379,6 +390,32 @@ function attackJudge(attackID, defenseID, move) {
 	polygon[defenseID].setAttribute('data-troop', result[1]);
 }
 
+// game start
+function playerGetLand(){
+    var polygon = $("svg polygon");
+    var initialLandNum = 3; 
+    var idList = [];  // for choosing land
+    for (var i=0; i<polygon.length; i++) { 
+        if (polygon[i].getAttribute("data-land")=="1") {idList.push(i); }
+    }
+    for (var j=0; j<PlayerList.length; j++){
+        for (var i=0; i<initialLandNum; i++){
+            var random = Math.round(Math.random()*(idList.length));
+            (PlayerList[j].landIDs).push(idList[random]);
+            PlayerList[j].land++;
+            polygon[idList[random]].setAttribute('data-player',PlayerList[j].id);
+            polygon[idList[random]].setAttribute('data-troop',5);
+            idList.pop(random);
+        }
+    }
+    refreshTroop();
+} 
+
+
+
+
+
+
 // drag and drop, resize
 
 function setCenter(){
@@ -406,7 +443,7 @@ function resizeSVG(e){
     var size_y,size_x,scale_x,scale_y; 
     var step_x=100; var step_y=100;
     var minSize_x=450; var minSize_y=380;
-    var maxSize_x=1050; var maxSize_y=980;
+    var maxSize_x=1850; var maxSize_y=1780;
     var oldTransX = transX;  var oldTransY = transY;
     size_x = parseInt(svg.getAttribute('width'));
     size_y = parseInt(svg.getAttribute('height'));
@@ -416,7 +453,6 @@ function resizeSVG(e){
     svg.setAttribute('height',size_y);
     svg.setAttribute('width',size_x);
 
-    console.log(size_x,size_y,transX,transY);
     if (size_x!=minSize_x && size_x!=maxSize_x && 
         size_y!=minSize_y && size_y!=maxSize_y) {resizeFlag=true;}
     if (resizeFlag == true){
