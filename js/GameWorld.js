@@ -1,5 +1,4 @@
 var svg = document.getElementById('hexGrid');
-
 var row_num = 10; var col_num = 10;
 var ids;
 var x, y, row, col, pointX, pointY, theta;
@@ -21,13 +20,22 @@ var HexPoints;
 var groundMap;
 
 var player1 = {
-	id: 1, color:'#5555ee', troop: 0, landOccupied: 0
+    id: 1, color:'#5555ee', troop: 0, landOccupied: 0
 };
 var player2 = {
-	id: 2, color:'orange', troop: 0, landOccupied: 0
+    id: 2, color:'orange', troop: 0, landOccupied: 0
 };
 
 var PlayerList = [player1, player2];
+// drag and drop
+var mx,my,oldMx,oldMy;
+var transX, transY;
+var start_drag; start_drag=false;
+
+var framing = document.getElementById("frame");
+var frame_width = parseInt($("main").css('width'));
+var frame_height = parseInt($("main").css('height'));
+// $(".frame").css({"wdith":$(window).width(),"height":$(window).height()});
 gameLoop();
 
 function gameLoop() {
@@ -57,7 +65,7 @@ function gameLoop() {
         $("button#move").css({"background-color":"yellow"}); 
         var flag = 0;
         $("#hexGrid polygon, #hexGrid text").off();
-        $("#hexGrid polygon, #hexGrid text").on('click', function(event) {
+        $("#hexGrid polygon").on('click', function(event) {
             if (flag == 0) {moveTroopFrom(event); flag = 1; showDist(event);}
             else if (flag == 1) {moveTroopTo(event); flag = 0; clearHighlight();}
         });
@@ -71,7 +79,12 @@ function gameLoop() {
     	$("button#player1").css({"background-color":"white"});
         $("button#player2").css({"background-color":"yellow"}); player = 2;});
 
-    // $("#hexGrid polygon").mouseover(function(event){mouseoverHandler(event);});
+    setCenter();
+    svg.addEventListener('mousemove',function(event){traceMouse(event);},false);
+    framing.addEventListener('mousewheel',function(event){
+        var flag; traceMouse(event); resizeSVG(event);},false);
+    svg.addEventListener('mousedown',dragStart,false);
+    document.body.addEventListener('mouseup',dragEnd,false);
 }
 // =============================================================================================
 
@@ -161,45 +174,18 @@ function showDist(event) {
     var styles1 = 'fill:#00ff00; opacity:0.5; stroke:black; stroke-width:1px; cursor:pointer;';
     // Starting point
     var styles2 = 'fill:red; opacity:1; stroke:black; stroke-width:1px; cursor:pointer;';
-    
     // Sea move
     var styles3 = 'fill:#ff00ff; opacity:0.5; stroke:black; stroke-width:1px; cursor:pointer;';
-    // Land move
+    // land move
     var styleDist = 'fill:red; opacity:0.5; stroke:black; stroke-width:1px; cursor:pointer;';
     var polygon = $("#hexGrid polygon");
-    var cid = parseInt($(event.target).attr('data-id'));  // Starting point id
+    var cid = parseInt($(event.target).attr('data-id'));   // starting point id
     ids = findMoveDist(cid);
-    // console.log(polygon[0].getAttribute("data-x"));
-    // console.log($(event.target));
-    // currentX = $(event.target).attr("data-x");
-    // currentY = $(event.target).attr("data-y");
-    // currentZ = $(event.target).attr("data-z");
-
-    // for (var i = 0; i < polygon.length; i++) {
-    //     var elem = polygon[i];
-    //     var xx = elem.getAttribute("data-x");
-    //     var yy = elem.getAttribute("data-y");
-    //     var zz = elem.getAttribute("data-z");
-    //     if (hexDistance(xx, yy, zz, currentX, currentY, currentZ) <= moveDist) {
-    //         if (elem.getAttribute("data-land") == "1") {
-    //             elem.setAttribute('style', styleDist);
-    //         } 
-    //         else {
-    //             elem.setAttribute('style', styles3); 
-    //         }
-    //     }
-    // }
-
     for (var i = 0; i < ids.length; i++) {
     	polygon[ids[i]].setAttribute('style', styleDist);
     }
 
-	if ((event.target.tagName) == "polygon") {
-		$(event.target).attr('style', styles2);
-	}
-	else if ((event.target.tagName) == "text") {
-		$(event.target).prev("polygon").attr('style', styles2);
-	}
+    $(event.target).attr('style', styles2);
 }
 
 function clearHighlight() {
@@ -211,10 +197,6 @@ function clearHighlight() {
         polygon[i].setAttribute('style', styles1);
     } 
 }
-
-// function mouseoverHandler(event) {
-//   console.log($(event.target).attr("data-x")+" "+$(event.target).attr("data-y")+" "+$(event.target).attr("data-z"));
-// }
 
 function hexDistance(x1, y1, z1, x2, y2, z2) {
     return Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1), Math.abs(z2 - z1));
@@ -249,32 +231,23 @@ function addTroop(event) {
 	  }
 }
 
-// Move troop from starting point
-function moveTroopFrom(event) { 
+function moveTroopFrom(event) {        // move troop from starting point
     var polygon = $("svg polygon");
     start_id = parseInt($(event.target).attr("data-id"));
     start_troop = parseInt(polygon[start_id].getAttribute("data-troop"));
-    start_coor = returnPos(start_id);
     move_troop = start_troop;
-		console.log("from: "+ids);
-
+        console.log("from:"+ids);
 }
 
 function moveTroopTo(event) {
     var polygon = $("svg polygon");
     end_id = parseInt($(event.target).attr("data-id"));
     end_troop = parseInt(polygon[end_id].getAttribute("data-troop"));
-    end_coor = returnPos(end_id);
-    // var dist = hexDistance(start_coor[0], start_coor[1], start_coor[2], end_coor[0], end_coor[1], end_coor[2]);
-        console.log("start_id= "+start_id);
-        console.log("end_id= "+end_id);
-        console.log(ids);
-    for (var i=0;i<ids.length; i++) {
-		if (end_id==ids[i]) {
-			attackJudge(start_id, end_id, move_troop);
-			refreshTroop();
-		}
-	}
+    for (var i=0;i<ids.length; i++){
+        if (end_id==ids[i]) {
+            attackJudge(start_id, end_id, move_troop);
+            refreshTroop();
+    }}
 }
 
 function returnPos(id) {
@@ -341,9 +314,9 @@ function findMoveDist(cid) {
 
     var polygon = $("svg polygon");
     for (var i = 0; i < polygon.length; i++) {
-    	var land = polygon[i].getAttribute("data-land"); // data-land = 1:land, 0:water
+    	var land = polygon[i].getAttribute("data-land"); // data-land=1:land, 0:water
     	if (hexDistID(cid,i) == 1 && land == "1") {
-            id1.push(i);     // Distance 1's id 
+            id1.push(i);   // distance 1's id 
         }
     }
     for (var i = 0; i < polygon.length; i++) {
@@ -351,14 +324,13 @@ function findMoveDist(cid) {
             var node = id1[j];
 	    	var land = polygon[i].getAttribute("data-land");
 	    	if (hexDistID(i,node) == 1 && land == "1" && i != cid) {
-                id2.push(i);  // Distance 2's id
+                id2.push(i);  // distance 2's id
             }
         }
     }
 
-	// Turn Set object to normal array
     function logging(v1, v2, set) {
-        ids.push(v1);
+        ids.push(v1);   // turn Set object to normal array
     }
     new Set(id1.concat(id2)).forEach(logging);
 
@@ -374,10 +346,9 @@ function attackJudge(attackID, defenseID, move) {
 	var army1 = parseInt(polygon[attackID].getAttribute("data-troop"));
 	var army2 = parseInt(polygon[defenseID].getAttribute("data-troop"));
 
-	// See if same person / not occupied
-	if (user1 == user2 || user2 == -1) {  
-		result[0] = army1 - move; // Start: move = troop - moved
-        result[1] = army2 + move; // End
+	if (user1 == user2 || user2 == -1) {   // see if same person / not occupied
+		result[0] = army1 - move;     // move = troop moved    start
+        result[1] = army2 + move;       // end
 
 		if (result[0] == 0) {    
             polygon[attackID].setAttribute('data-player', -1); 
@@ -385,21 +356,21 @@ function attackJudge(attackID, defenseID, move) {
 		if (user2 == -1) { 
             polygon[defenseID].setAttribute('data-player', user1); 
         }
-	} else if (user1 != user2) {    
+	} else if (user1 != user2){    
 		var attackRemain = Math.round(move - army2 * defensePercent);
 		var defenseRemain = Math.round(army2 - move * attackPercent);
 		if (attackRemain < 0) {
             attackRemain = 0;
-        }	else if (defenseRemain < 0) {defenseRemain = 0;}
+        }	else if (defenseRemain<0) { defenseRemain=0;}
 
 		if (defenseRemain <= 0) {
             // Attack wins!
 			result[0] = army1 - move;
             result[1] = attackRemain;
 			polygon[defenseID].setAttribute('data-player', user1);
-		} else if(defenseRemain > 0) {
+		} else if(defenseRemain>0) {
             // Defense wins!
-			result[0] = army1 - move + attackRemain;		
+			result[0] = army1 -move + attackRemain;		
             result[1] = defenseRemain;
         }
 	}
@@ -408,11 +379,68 @@ function attackJudge(attackID, defenseID, move) {
 	polygon[defenseID].setAttribute('data-troop', result[1]);
 }
 
-// function toggleHandler(event) {
-//     Toggle between two classes of different colors
-//     var styles1 = 'fill:#00ff00; opacity:0.5; stroke:black; stroke-width:1px; cursor:pointer;';
-//     var styles2 = 'fill:red; opacity:1; stroke:black; stroke-width:1px; cursor:pointer;';
-//     $(event.target).attr('style', function(index, attr) {
-//         return attr == styles1 ? styles2 : styles1 ;
-//     });
-// }
+// drag and drop, resize
+
+function setCenter(){
+    var box_height = parseInt(svg.getAttribute('height'));
+    var box_width = parseInt(svg.getAttribute('width'));
+    transX = frame_width/2-box_width/2;
+    transY = frame_height/2-box_height/2;
+    svg.style.transform = "translate("+transX+"px,"+transY+"px)";
+}
+function traceMouse(event){
+    var svg_coor = svg.getBoundingClientRect();
+    var framing_coor = framing.getBoundingClientRect();
+    mx = event.clientX - svg_coor.left; 
+    my = event.clientY - svg_coor.top;
+    if (start_drag==true){
+        var frameX = event.clientX - framing_coor.left;
+        var frameY = event.clientY - framing_coor.top;
+        transX = frameX - oldMx;
+        transY = frameY - oldMy;
+        svg.style.transform = "translate("+transX+"px,"+transY+"px)";
+    }
+}
+
+function resizeSVG(e){
+    var size_y,size_x,scale_x,scale_y; 
+    var step_x=100; var step_y=100;
+    var minSize_x=450; var minSize_y=380;
+    var maxSize_x=1050; var maxSize_y=980;
+    var oldTransX = transX;  var oldTransY = transY;
+    size_x = parseInt(svg.getAttribute('width'));
+    size_y = parseInt(svg.getAttribute('height'));
+    var delta = Math.max(-1,Math.min(1,(e.wheelDelta || -e.detail)));   // -1 to 1
+    size_x = Math.max(minSize_x, Math.min(maxSize_x,size_x+delta*step_x));
+    size_y = Math.max(minSize_y, Math.min(maxSize_y,size_y+delta*step_y));
+    svg.setAttribute('height',size_y);
+    svg.setAttribute('width',size_x);
+
+    console.log(size_x,size_y,transX,transY);
+    if (size_x!=minSize_x && size_x!=maxSize_x && 
+        size_y!=minSize_y && size_y!=maxSize_y) {resizeFlag=true;}
+    if (resizeFlag == true){
+        if (delta==1) { scale_y = size_y/(size_y-step_y);
+            scale_x = size_x/(size_x-step_x);  }
+        else if (delta==-1) {scale_x = size_x/(size_x+step_x);
+            scale_y = size_y/(size_y+step_y);}
+        var dx = (scale_x-1)*mx;  // find distance moved for chosen point
+        var dy = (scale_y-1)*my;
+        transX = oldTransX-dx;
+        transY = oldTransY-dy;
+
+        svg.style.transform = "translate("+transX+"px,"+transY+"px)";
+        if (size_x==minSize_x || size_x==maxSize_x ||
+            size_y==minSize_y || size_y==maxSize_y) {resizeFlag=false;}
+    }
+} 
+
+function dragStart(){
+    start_drag = true;
+    oldMx = mx;  oldMy=my;
+}
+function dragEnd(){
+    start_drag = false;
+}
+
+
