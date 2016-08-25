@@ -15,7 +15,6 @@
         padding: 0;
         -webkit-user-select: none;
     }
-	
     .main
     {
         border: 10px solid #b6bdc3;
@@ -23,46 +22,38 @@
         justify-content: center;
         align-items: center;
     }
-   
-    svg 
-    {
-        width: auto;   
-    }
-
-    svg text 
-    {
+    svg text{
         font-weight: bold;
         -webkit-user-select: none;
     }
-
-    #hexGrid text
-    {
-    	cursor: pointer;
+    svg{
+        width: 649px;   
     }
-
-    /*
+    
     @media only screen and (max-height: 600px) {
         svg {
             width: auto;
-            height: 300px;
+            height: 450px;
         }
     }
     
     @media only screen and (max-height: 360px) {
         svg {
             width: auto;
-            height: 180px;
+            height: 200px;
         }
     }
     
     @media only screen and (max-height: 240px) {
         svg {
             width: auto;
-            height: 120px;
+            height: 180px;
         }
     }
-    */
-
+    header {
+        height: 30px;
+    }
+    
     svg polygon:hover 
     {
         fill-opacity: 1;
@@ -72,57 +63,11 @@
         transform-origin: 50% 50%;
         -webkit-transform-origin: 50% 50%;
     }
-
-    /* This way can temporarily fix the footer at the bottom */
-    .footer
-    {
-    	position: absolute;
-    	bottom: 0;
-    }
     </style>
-
-    <script>
-    $(document).ready(function() {
-		resizeDiv();
-	});
-
-	window.onresize = function(event) {
-		resizeDiv();
-	}
-
-    // This way can temporarily hide the scrollbar when zooming in
-    // Drawback is that the hexagons are not really zoomed in
-	function resizeDiv() {
-		vpw = $(window).width();
-		vph = $(window).height();
-		if ($(window).height() > 600) {
-			vph = $(window).height() * 0.9;
-		}
-		else if ($(window).height() > 500) {
-			vph = $(window).height() * 0.85;
-		}
-		else if ($(window).height() > 400) {
-			vph = $(window).height() * 0.8;
-		}
-		else if ($(window).height() > 300) {
-			vph = $(window).height() * 0.75;
-		}
-		else if ($(window).height() > 200) {
-			vph = $(window).height() * 0.7;
-		}
-		else if ($(window).height() > 150) {
-			vph = $(window).height() * 0.6;
-		}
-		else if ($(window).height() > 120) {
-			vph = $(window).height() * 0.5;
-		}
-		$("svg").css({"height": vph + "px"});
-	}
-    </script>
 </head>
     
 <body>
-    
+<div class="frame">    
     <div class="header">
         Header
         <button id="add">Add Troop</button>
@@ -133,7 +78,7 @@
     </div>
 
     <div class="main">
-        <svg id="hexGrid" version="1.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 649 545"
+        <svg id="hexGrid"  version="1.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 649 800"
              xmlns="http://www.w3.org/2000/svg">
         </svg>
     </div>
@@ -141,7 +86,7 @@
     <div class="footer">
         Footer
     </div>
-    
+</div>
     <script type="text/javascript" src="js/GameWorld.js"> </script>
 
 </body>
