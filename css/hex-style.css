@@ -1,17 +1,32 @@
+@font-face
+{
+    font-family: sansation;
+    src: url(../fonts/sansation_light.woff);
+}
+
 page-wrapper{
     overflow: hidden;
 }
+
 main,header,footer{
     margin: 0;
     padding: 0;
     width: 100%;
     left: 0;
 }
+
+body, button 
+{
+	font-family: sansation;
+}
+
 *{ box-sizing: border-box;
    -webkit-user-select: none;}
+   
 header {
     height: 30px;
 }
+
 main
 {
     border: 10px solid #b6bdc3;
@@ -62,27 +77,42 @@ svg polygon:hover
     transform-origin: 50% 50%;
     -webkit-transform-origin: 50% 50%;
 }
+
 .popup{
-    width:200px; height:70px;
-    position: absolute;
-    top: 50; left:50;
+    width: 200px; height: auto;
+    position: fixed;
+	top: 50; left:50;
     display: none;
-    border-radius: 35px;
-    position: absolute;
+	border: 5px solid #000;
+	-moz-border-radius: 10px;
+	-webkit-border-radius: 10px;
+	border-radius: 10px;
+	box-shadow: 0 20px 40px 0 rgba(0,0,0,0.5),0 20px 40px 0 rgba(0,0,0,0.5);
 }
+
 .popup .bar{
     background-color: #fff;
     height: 20px;
+	margin: auto;
+	
 }
 .popup .content{
     background-color: #c0c0c0;
     height: 50px;
+	margin: auto;
 }
+
 .popup button {
-    margin-top: 30px;
-    margin-left: 10px;
+    color: #aaaaaa;
+    font-size: 10px;
+    font-weight: bold;
+	width: auto;
+	height: auto;
+	float: right;
 }
+
 .popup #remove {
     cursor: pointer;
 }
+
 footer { height:30px; top: 700px; position: absolute;}
