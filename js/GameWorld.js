@@ -82,11 +82,11 @@ function gameLoop() {
 
     $("button#player1").click(function() { 
     	$("button#player2").css({"background-color":"white"});
-        $("button#player1").css({"background-color":"yellow"}); player = 1;});
+        $("button#player1").css({"background-color":"yellow"}); player = 0;});
 
     $("button#player2").click(function() { 
     	$("button#player1").css({"background-color":"white"});
-        $("button#player2").css({"background-color":"yellow"}); player = 2;});
+        $("button#player2").css({"background-color":"yellow"}); player = 1;});
 
     setCenter();
     svg.addEventListener('mousemove',function(event){traceMouse(event);},false);
