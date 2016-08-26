@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="css/font-awesome/css/font-awesome.min.css">
     <link rel="stylesheet" href="css/hex-style.css">
     
-	<title>The Empire of Light</title>
+    <title>The Empire of Light</title>
 </head>
     
 <body>
@@ -28,8 +28,8 @@
             <i class="icon-remove" id="remove" style="float:right"></i> 
         </div>
         <div class="content">
-            <input type="range" min="0" max="7" value="7" step="1" onmousemove="showValue(this.value)"/>
-            <span id="range">7</span>
+            <input type="range" min="0" step="1" />
+            <span id="range"></span>
             <button id="ok">OK</button>
         </div>
     </div>
@@ -37,7 +37,7 @@
 </main>
 
 <footer>
-    Footer
+    <p id="roundAddNum"></p>
 </footer>
 </div>
 <script type="text/javascript" src="js/GameWorld.js"> </script>
