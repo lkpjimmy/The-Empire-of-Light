@@ -7,7 +7,7 @@ var x, y, row, col, pointX, pointY, theta;
 var currentX, currentY;
 // For moving troops
 var start_troop, start_coor, end_troop, end_coor, move_troop, start_id, end_id;  
-
+var addedTroop;
 // Radius can be configured later
 var radius = 35;
 
@@ -34,6 +34,8 @@ var start_drag; start_drag=false;
 var framing = document.getElementById("frame");
 var frame_width = parseInt($("main").css('width'));
 var frame_height = parseInt($("main").css('height'));
+$(".page-wrapper").css({"width":$(window).width(),"height":($(window).height()-60)});
+
 // $(".frame").css({"wdith":$(window).width(),"height":$(window).height()});
 gameLoop();
 
@@ -42,13 +44,17 @@ function gameLoop() {
     playerGetLand();
     // $("#hexGrid polygon").click(function(event){showDist(event);});
     $("button#player1").css({"background-color":"yellow"}); player = 1;
+    $(window).resize(function(){
+        $(".page-wrapper").css({"width":$(window).width(),"height":($(window).height()-60)});
+    });
 
     $("button#add").click(function() {
     	$("button").not("button#player1, button#player2").css({"background-color":"white"});
         $("button#add").css({"background-color":"yellow"});
         $("#hexGrid polygon, #hexGrid text").off();
-        $("#hexGrid polygon, #hexGrid text").on('click', function(event){addTroop(event);});
-        // console.log("start");
+        $("#hexGrid polygon, #hexGrid text").on('click', function(event){
+            addTroop(event); console.log("add called");
+        });
     });
 
     $("button#stop").click(function() {
@@ -56,7 +62,6 @@ function gameLoop() {
         $("button#stop").css({"background-color":"yellow"});
         $("#hexGrid polygon, #hexGrid text").off();
         // $("#hexGrid polygon").click(function(event){showDist(event);});
-        // console.log("stop");
     });
 
     $("button#move").click(function() {
@@ -89,6 +94,8 @@ function gameLoop() {
         var flag; traceMouse(event); resizeSVG(event);},false);
     svg.addEventListener('mousedown',dragStart,false);
     document.body.addEventListener('mouseup',dragEnd,false);
+
+
 }
 // =============================================================================================
 
@@ -221,20 +228,32 @@ function addTroop(event) {
     var polygon = $("svg polygon");
     var texting = $("svg text");
     var id = parseInt($(event.target).attr("data-id"));
+    console.log("id="+id);
     var who = parseInt(polygon[id].getAttribute('data-player'));
-    if (polygon[id].getAttribute('data-land') == "1" && player > 0 &&
-        who==player) {
-        var troop = parseInt(polygon[id].getAttribute("data-troop"));
-	    // Add troop in every click
-	    troop++;
-	    polygon[id].setAttribute("data-troop",troop);
+    if (polygon[id].getAttribute('data-land') == "1" && player > 0 && who==player) {
+        var cx = parseInt(polygon[id].getAttribute('data-cx'));
+        var cy = parseInt(polygon[id].getAttribute('data-cy'));
+        var currentTroop = parseInt(polygon[id].getAttribute("data-troop"));
+	    // troop++;
+        console.log("if loop");
 
-	 	// polygon[id].setAttribute("data-player",player);
-	    // texting[id].setAttribute("data-troop", troop);
-	    // $(event.target).attr("data-troop", troop);
-	    // texting[id].innerHTML = troop;
-	    refreshTroop();
-	  }
+        $(".popup").css({"display":"block"});
+        popup_pos(cx,cy);
+
+        $(".popup #ok").one('click',function(){     
+        // if not set 'one', will add troops multiple times 
+        // (depends on times of click you have!!
+            $(".popup").css({"display":"none"});
+    	    polygon[id].setAttribute("data-troop",currentTroop+addedTroop);
+            console.log("add");
+            refreshTroop();
+        });
+        $(".popup #remove").click(function(){
+            $(".popup").css({"display":"none"});
+        });
+        
+    }
+
 }
 
 function moveTroopFrom(event) {        // move troop from starting point
@@ -274,6 +293,7 @@ function returnPos(id) {
 function refreshTroop() {
     var polygon = $("svg polygon");
     var text = $("svg text");
+    console.log("refreshTroop");
     for (var i = 0; i < polygon.length; i++) {
         var troop = polygon[i].getAttribute("data-troop");
         var playerID = polygon[i].getAttribute("data-player");
@@ -479,4 +499,13 @@ function dragEnd(){
     start_drag = false;
 }
 
+//  popup window
 
+function popup_pos(x,y){
+    $(".popup").css({"top":(y+20),"left":(x+20)});
+}
+function showValue(value){
+    document.getElementById("range").innerHTML=value;
+    addedTroop = parseInt(value);
+    console.log("addedTroop=",addedTroop);
+}

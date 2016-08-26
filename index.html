@@ -3,80 +3,16 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="js/jquery-3.1.0.min.js"></script>
+    <link rel="stylesheet" href="css/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="css/hex-style.css">
     
 	<title>The Empire of Light</title>
-    
-    <!-- CSS needs to be configured later -->
-    <style>
-    main,header,footer{
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        left: 0;
-    }
-    *{ box-sizing: border-box;
-       -webkit-user-select: none;}
-    header {
-        height: 30px;
-    }
-    main
-    {
-        border: 10px solid #b6bdc3;
-        /*display: flex;*/
-        /*justify-content: center;*/
-        /*align-items: center;*/
-        background-color: lightyellow;
-        height: 800px;
-        overflow: hidden;
-        position: absolute;
-    }
-    svg text{
-        font-weight: bold;
-        -webkit-user-select: none;
-    }
-    svg{
-        /*background-color: orange; */
-        position: absolute;
-    }
-    
-/*    @media only screen and (max-height: 600px) {
-        svg {
-            width: auto;
-            height: 450px;
-        }
-    }
-    
-    @media only screen and (max-height: 360px) {
-        svg {
-            width: auto;
-            height: 200px;
-        }
-    }
-    
-    @media only screen and (max-height: 240px) {
-        svg {
-            width: auto;
-            height: 180px;
-        }
-    }*/
-    
-    svg polygon:hover 
-    {
-        fill-opacity: 1;
-        stroke-width: 5;
-        transform: scale(0.9);
-        -webkit-transform: scale(0.9);
-        transform-origin: 50% 50%;
-        -webkit-transform-origin: 50% 50%;
-    }
-    footer { height:30px; top: 850px; position: absolute;}
-    </style>
 </head>
     
 <body>
+<div class="page-wrapper">
 <header>
-    Header
     <button id="add">Add Troop</button>
     <button id="stop">Stop All</button>
     <button id="move">Move</button>
@@ -87,11 +23,23 @@
 <main id="frame">
     <svg id="hexGrid"  version="1.1" viewBox="0 0 649 580" width="650" height="580" xmlns="http://www.w3.org/2000/svg">
     </svg>  <!-- viewBox should be calculated according to polygon numbers, each polygon assigned with fixed width and height -->
+    <div class="popup">
+        <div class="bar">add troops
+            <i class="icon-remove" id="remove" style="float:right"></i> 
+        </div>
+        <div class="content">
+            <input type="range" min="0" max="7" value="7" step="1" onmousemove="showValue(this.value)"/>
+            <span id="range">7</span>
+            <button id="ok">ok</button>
+        </div>
+    </div>
+
 </main>
 
 <footer>
     Footer
 </footer>
+</div>
 <script type="text/javascript" src="js/GameWorld.js"> </script>
 
 </body>
