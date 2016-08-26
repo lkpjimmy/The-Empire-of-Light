@@ -20,10 +20,10 @@ var HexPoints;
 var groundMap;
 
 var player1 = {
-    id: 0, color:'#5555ee', troop: 0, land: 0, landIDs:[]
+    id: 0, color:'#5555ee', troop: 0, land: 0, landIDs:[], roundAddNum:5
 };
 var player2 = {
-    id: 1, color:'orange', troop: 0, land: 0, landIDs:[]
+    id: 1, color:'orange', troop: 0, land: 0, landIDs:[], roundAddNum:5
 };
 var PlayerList = [player1, player2];
 // drag and drop
@@ -48,12 +48,16 @@ function gameLoop() {
         $(".page-wrapper").css({"width":$(window).width(),"height":($(window).height()-60)});
     });
 
+    // update news
+    $("footer #roundAddNum").text("Add Troop remain: "+PlayerList[player].roundAddNum);
     $("button#add").click(function() {
+
     	$("button").not("button#player1, button#player2").css({"background-color":"white"});
         $("button#add").css({"background-color":"yellow"});
         $("#hexGrid polygon, #hexGrid text").off();
         $("#hexGrid polygon, #hexGrid text").on('click', function(event){
-            addTroop(event); console.log("add called");
+            addTroop(event); 
+            $("footer #roundAddNum").text("Add Troop remain: "+PlayerList[player].roundAddNum);
         });
     });
 
@@ -239,20 +243,27 @@ function addTroop(event) {
         console.log("if loop");
 
         $(".popup").css({"display":"block"});
+        roundAdd = PlayerList[player].roundAddNum;
+
+        $(".popup input").attr('max',roundAdd);
+        $(".popup input").attr('value',roundAdd);
+        $(".popup input").attr('onmousemove',"showAddValue(this.value)");
+        $(".popup input").attr('onchange',"showAddValue(this.value)");
         popup_pos(cx,cy);
 
         $(".popup #ok").one('click',function(){     
         // if not set 'one', will add troops multiple times 
         // (depends on times of click you have!!
             $(".popup").css({"display":"none"});
-    	    polygon[id].setAttribute("data-troop",currentTroop+addedTroop);
-            console.log("add");
+            polygon[id].setAttribute("data-troop",currentTroop+addedTroop);
+            PlayerList[player].roundAddNum -= addedTroop;
             refreshTroop();
         });
         $(".popup #remove").click(function(){
             $(".popup").css({"display":"none"});
         });
         
+        $("footer #roundAddNum").text("Add Troop remain: "+PlayerList[player].roundAddNum);
     }
 
 }
@@ -264,6 +275,7 @@ function moveTroopFrom(event) {        // move troop from starting point
         start_id = parseInt($(event.target).attr("data-id"));
         start_troop = parseInt(polygon[start_id].getAttribute("data-troop"));
         move_troop = start_troop;
+        console.log(":move_troop=",move_troop);
         return true;
     }
         // console.log("from:"+ids);
@@ -276,8 +288,26 @@ function moveTroopTo(event) {
     end_troop = parseInt(polygon[end_id].getAttribute("data-troop"));
     for (var i=0;i<ids.length; i++){
         if (end_id==ids[i]) {
-            attackJudge(start_id, end_id, move_troop);
-            refreshTroop();
+            var svg_coor = svg.getBoundingClientRect();
+            var cx = parseInt(polygon[end_id].getAttribute('data-cx'))+svg_coor.left;
+            var cy = parseInt(polygon[end_id].getAttribute('data-cy'))+svg_coor.top;
+            $(".popup").css({"display":"block"});
+            $(".popup input").attr('max',start_troop);
+            $(".popup input").attr('value',start_troop);
+            // $(".popup input").attr('onload',"showMoveValue(this.value)");
+            $(".popup input").attr('onmousemove',"showMoveValue(this.value)");
+            $(".popup input").attr('onchange',"showMoveValue(this.value)");
+            popup_pos(cx,cy);
+
+            $(".popup #ok").one('click',function(){     
+                $(".popup").css({"display":"none"});
+                attackJudge(start_id, end_id, move_troop);
+                refreshTroop();
+            });
+            $(".popup #remove").click(function(){
+                $(".popup").css({"display":"none"});
+            });
+
     }}
 }
 
@@ -521,8 +551,13 @@ function dragEnd(){
 function popup_pos(x,y){
     $(".popup").css({"top":(y+20),"left":(x+20)});
 }
-function showValue(value){
+function showAddValue(value){
     document.getElementById("range").innerHTML=value;
     addedTroop = parseInt(value);
-    console.log("addedTroop=",addedTroop);
+    // console.log("addedTroop=",addedTroop);
+}
+function showMoveValue(value){
+    document.getElementById("range").innerHTML=value;
+    move_troop = parseInt(value);
+    console.log(value);
 }
