@@ -1,6 +1,6 @@
 var svg = document.getElementById('hexGrid');
 var row_num = 10, col_num = 10;
-var ids;
+var ids;  // store ids within moving distance 2
 var x, y, row, col, pointX, pointY, theta;
 
 // For moving troops
@@ -58,7 +58,7 @@ function gameLoop() {
         $("#hexGrid polygon, #hexGrid text").on('click', function(event){
             id = passAddTroop(event);
         });
-        $(".popup #ok").click(function(){ if (id!=-1) addTroop(id); });
+        $(".popup #ok").one('click',function(){ if (id!=-1) addTroop(id); });
         $(".popup #remove").click(function(){
             $(".popup").css({"display":"none"});
         });
@@ -85,15 +85,23 @@ function gameLoop() {
     	$("button").not("button#player1, button#player2").css({"background-color":"white"});
         // Deal with $(svg text) later
         $("button#move").css({"background-color":"yellow"}); 
-        var flag = 0; 
+        var flag = 0; var flag2; 
         $("#hexGrid polygon, #hexGrid text").off();
         $("#hexGrid polygon").on('click', function(event) {
             if (flag == 0 ) {
                 // only allow players to control their troops
                 if (moveTroopFrom(event)){  showDist(event); flag = 1;} 
                 else { flag = 0;}
-            } else if (flag == 1) {
-                moveTroopTo(event); clearHighlight(); flag = 0;}
+                // second step, pass id after click ok
+            } else if (flag == 1) {flag2 = passMoveTroop(event); flag = 0;}
+        });
+        $(".popup #ok").click(function(){ 
+            if (flag2==1) {moveTroopTo();} 
+            clearHighlight();  
+        });
+        $(".popup #remove").click(function(){
+            $(".popup").css({"display":"none"});
+            clearHighlight();  
         });
     });
 
@@ -205,7 +213,7 @@ function roundBegin(){
     for (var i=0;i<PlayerList.length; i++){
         PlayerList[i].roundAddNum = 5;
     }
-    // renewMoveRemain();
+    renewMoveRemain();
 }
 function renewMoveRemain(){
     var polygon = $("svg polygon");
@@ -224,11 +232,11 @@ function addTroop(id) {
     $(".popup").css({"display":"none"});
     // addedTroop is easily undefied , since input element not triggered
     if (!addedTroop) addedTroop = PlayerList[player].roundAddNum;
-    
+
     polygon[id].setAttribute("data-troop",currentTroop+addedTroop);
     PlayerList[player].roundAddNum -= addedTroop;
-    console.log(addedTroop);
-    console.log("after:"+PlayerList[player].roundAddNum);
+    // console.log(addedTroop);
+    // console.log("after:"+PlayerList[player].roundAddNum);
 
     refreshTroop();
 }
@@ -246,7 +254,7 @@ function passAddTroop(event){
         $(".popup input").attr('value',roundAdd);
         $(".popup #range").text(roundAdd);
 
-        console.log(roundAddNum);
+        // console.log(roundAddNum);
         $(".popup input").attr('onmousemove',"showAddValue(this.value)");
         $(".popup input").attr('onchange',"showAddValue(this.value)");
         popup_pos(cx,cy);
@@ -273,11 +281,17 @@ function moveTroopFrom(event) {        // move troop from starting point
     return false;
 }
 
-function moveTroopTo(event) {
+function moveTroopTo() {
+    $(".popup").css({"display":"none"});
+    transferMoveRemain(start_id,move_troop);
+    attackJudge(start_id, end_id, move_troop);
+    refreshTroop();
+}
+function passMoveTroop(event){
     var polygon = $("svg polygon");
-    var moveRemain = parseInt(polygon[start_id].getAttribute('data-moveRemain'));
     end_id = parseInt($(event.target).attr("data-id"));
     end_troop = parseInt(polygon[end_id].getAttribute("data-troop"));
+    var moveRemain = parseInt(polygon[start_id].getAttribute('data-moveRemain'));
     for (var i=0;i<ids.length; i++){
         if (end_id==ids[i]) {
             var svg_coor = svg.getBoundingClientRect();
@@ -286,22 +300,16 @@ function moveTroopTo(event) {
             $(".popup").css({"display":"block"});
             $(".popup input").attr('max',moveRemain);
             $(".popup input").attr('value',moveRemain);
-            // $(".popup input").attr('onload',"showMoveValue(this.value)");
+            $(".popup #range").text(moveRemain);
+
             $(".popup input").attr('onmousemove',"showMoveValue(this.value)");
             $(".popup input").attr('onchange',"showMoveValue(this.value)");
             popup_pos(cx,cy);
 
-            $(".popup #ok").one('click',function(){     
-                $(".popup").css({"display":"none"});
-                transferMoveRemain(start_id,move_troop);
-                attackJudge(start_id, end_id, move_troop);
-                refreshTroop();
-            });
-            $(".popup #remove").click(function(){
-                $(".popup").css({"display":"none"});
-            });
-
-    }}
+            return 1;
+        }
+    }
+    return -1;
 }
 
 function mapGenerator() {
@@ -589,11 +597,13 @@ function popup_pos(x,y){
 }
 function showAddValue(value){
     document.getElementById("range").innerHTML=value;
+    $("input").attr('value',value);
     addedTroop = parseInt(value);
     // console.log("addedTroop=",addedTroop);
 }
 function showMoveValue(value){
     document.getElementById("range").innerHTML=value;
+    $("input").attr('value',value);
     move_troop = parseInt(value);
-    console.log(value);
+    // console.log(value);
 }
