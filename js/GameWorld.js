@@ -1,22 +1,19 @@
 var svg = document.getElementById('hexGrid');
-var row_num = 10; var col_num = 10;
+var row_num = 10, col_num = 10;
 var ids;
 var x, y, row, col, pointX, pointY, theta;
 
-// Current selection
-var currentX, currentY;
 // For moving troops
 var start_troop, start_coor, end_troop, end_coor, move_troop, start_id, end_id;  
-var addedTroop=7;
-// Radius can be configured later
+var addedTroop,rangeNumber;
 var radius = 35;
 
-var landPercent = 0.85;   var waterPercent = 0.15;
-var attackPercent = 0.6; var defensePercent = 0.7;
+var landPercent = 0.85, waterPercent = 0.15;
+var attackPercent = 0.6, defensePercent = 0.7;
 var moveDist = 2;
 
 // The initial center point of drawing (+1 is to compensate the stroke width)
-var HexPoints;
+// var HexPoints;
 var groundMap;
 
 var player1 = {
@@ -30,7 +27,7 @@ var PlayerList = [player1, player2];
 var mx,my,oldMx,oldMy;
 var transX, transY;
 var start_drag; start_drag=false;
-
+var refreshVar,refreshVar2;
 var framing = document.getElementById("frame");
 var frame_width = parseInt($("main").css('width'));
 var frame_height = parseInt($("main").css('height'));
@@ -42,33 +39,49 @@ gameLoop();
 function gameLoop() {
     buildGrid(row_num, col_num);
     playerGetLand();
+    roundBegin();
     // $("#hexGrid polygon").click(function(event){showDist(event);});
     $("button#player1").css({"background-color":"yellow"}); player = 0;
     $(window).resize(function(){
         $(".page-wrapper").css({"width":$(window).width(),"height":($(window).height()-60)});
     });
 
+    refreshVar = setInterval(refreshAdd,500);
     // update news
-    $("footer #roundAddNum").text("Add Troop remain: "+PlayerList[player].roundAddNum);
+    // $("footer #roundAddNum").text("Add Troop remain: "+PlayerList[player].roundAddNum);
     $("button#add").click(function() {
-
-    	$("button").not("button#player1, button#player2").css({"background-color":"white"});
+        var id;
+        refreshVar = setInterval(refreshAdd,500);
+        $("button").not("button#player1, button#player2").css({"background-color":"white"});
         $("button#add").css({"background-color":"yellow"});
         $("#hexGrid polygon, #hexGrid text").off();
         $("#hexGrid polygon, #hexGrid text").on('click', function(event){
-            addTroop(event); 
-            $("footer #roundAddNum").text("Add Troop remain: "+PlayerList[player].roundAddNum);
+            id = passAddTroop(event);
+        });
+        $(".popup #ok").click(function(){ if (id!=-1) addTroop(id); });
+        $(".popup #remove").click(function(){
+            $(".popup").css({"display":"none"});
         });
     });
 
+    $("button#finishAdd").click(function(){
+        $("button").not("button#player1, button#player2").css({"background-color":"white"});
+        $("button#finishAdd").css({"background-color":"yellow"});
+        renewMoveRemain();
+    });
     $("button#stop").click(function() {
+        clearInterval(refreshVar);  // clear add remain
+        $("footer #roundAddNum").text("");
+
     	$("button").not("button#player1, button#player2").css({"background-color":"white"});
         $("button#stop").css({"background-color":"yellow"});
         $("#hexGrid polygon, #hexGrid text").off();
-        // $("#hexGrid polygon").click(function(event){showDist(event);});
     });
 
     $("button#move").click(function() {
+        clearInterval(refreshVar);  // clear add remain
+        $("footer #roundAddNum").text("");
+
     	$("button").not("button#player1, button#player2").css({"background-color":"white"});
         // Deal with $(svg text) later
         $("button#move").css({"background-color":"yellow"}); 
@@ -92,6 +105,12 @@ function gameLoop() {
     	$("button#player1").css({"background-color":"white"});
         $("button#player2").css({"background-color":"yellow"}); player = 1;});
 
+    $("button#commit").click(function(){
+        $("button").not("button#player1, button#player2").css({"background-color":"white"});
+        $("button#commit").css({"background-color":"yellow"});
+        roundBegin();
+    });
+
     setCenter();
     svg.addEventListener('mousemove',function(event){traceMouse(event);},false);
     framing.addEventListener('mousewheel',function(event){
@@ -102,9 +121,8 @@ function gameLoop() {
 
 }
 // =============================================================================================
-
+// hexagon attribute
 function makeHexagon(row, col, x, y, hex_x, hex_y, id) {
-    // Again, these information can be configured later
     var troop = 0;
     var fillColor, land; player = -1;
 
@@ -118,16 +136,17 @@ function makeHexagon(row, col, x, y, hex_x, hex_y, id) {
     polygon.style.strokeWidth = '1px';
     polygon.style.cursor = "pointer";
 
-    polygon.setAttribute('data-land', land);
     polygon.setAttribute('points', drawHexSVG(x, y, radius));
     polygon.setAttribute('data-x', hex_x);            // data-* : custom attribute
     polygon.setAttribute('data-y', hex_y);
     polygon.setAttribute('data-z', (-hex_x - hex_y));
     polygon.setAttribute('data-cx', x);
     polygon.setAttribute('data-cy', y);
-    polygon.setAttribute('data-troop', troop);
     polygon.setAttribute('data-id', id);
+    polygon.setAttribute('data-land', land);
+    polygon.setAttribute('data-troop', troop);
     polygon.setAttribute('data-player', player);
+    polygon.setAttribute('data-moveRemain', 0);
 
     svg.appendChild(polygon);
     // Build text for army number
@@ -135,7 +154,6 @@ function makeHexagon(row, col, x, y, hex_x, hex_y, id) {
     text.setAttribute("x", (x - radius * 0.2));
     text.setAttribute("y", (y + radius * 0.2));
     text.setAttribute("data-id", id);
-    // text.setAttribute('data-troop', troop);
     text.setAttribute("font-size", radius * 0.7);
     text.innerHTML = troop;
     
@@ -143,7 +161,7 @@ function makeHexagon(row, col, x, y, hex_x, hex_y, id) {
 }
 
 function buildGrid(row_num, col_num) {
-    HexPoints = [];  
+    // HexPoints = [];  
     var id = -1;
     var hex_x = 0; 
     var count = 0;
@@ -178,112 +196,86 @@ function drawHexSVG(x, y, radius) {
     for (var theta = Math.PI / 6; theta < (Math.PI * 2); theta += Math.PI / 3) {
         var pointX = x + radius * Math.cos(theta);
         var pointY = y + radius * Math.sin(theta);
-        HexPoints.push([pointX, pointY]); // Overall hex array storage
+        // HexPoints.push([pointX, pointY]); // Overall hex array storage
         tmp.push(pointX + "," + pointY);  // tmp output for drawing one hexagon
     }   
     return tmp.join(" ");
 }
-
-function showDist(event) {
-    // Normal land
-    var styles1 = 'fill:#00ff00; opacity:0.5; stroke:black; stroke-width:1px; cursor:pointer;';
-    // Starting point
-    var styles2 = 'fill:red; opacity:1; stroke:black; stroke-width:1px; cursor:pointer;';
-    // Sea move
-    var styles3 = 'fill:#ff00ff; opacity:0.5; stroke:black; stroke-width:1px; cursor:pointer;';
-    // land move
-    var styleDist = 'fill:red; opacity:0.5; stroke:black; stroke-width:1px; cursor:pointer;';
-    var polygon = $("#hexGrid polygon");
-    var cid = parseInt($(event.target).attr('data-id'));   // starting point id
-    ids = findMoveDist(cid);
-    for (var i = 0; i < ids.length; i++) {
-    	polygon[ids[i]].setAttribute('style', styleDist);
+function roundBegin(){
+    for (var i=0;i<PlayerList.length; i++){
+        PlayerList[i].roundAddNum = 5;
     }
-
-    $(event.target).attr('style', styles2);
+    // renewMoveRemain();
 }
-
-function clearHighlight() {
-    var polygon = $("#hexGrid polygon");
-    for (var i = 0; i < polygon.length; i++) {
-        if (polygon[i].getAttribute('data-land') == "1") {addition = "fill:#00ff00";}
-        else if (polygon[i].getAttribute('data-land') == "0") {addition = "fill:#0000ff";}
-        var styles1 = 'opacity:0.5; stroke:black; stroke-width:1px; cursor:pointer;'+addition;
-        polygon[i].setAttribute('style', styles1);
+function renewMoveRemain(){
+    var polygon = $("svg polygon");
+    for (var i=0;i<PlayerList.length; i++){
+        var lands = PlayerList[i].landIDs;
+        for (var j=0; j<lands.length; j++){
+            var troop = polygon[lands[j]].getAttribute('data-troop');
+            polygon[lands[j]].setAttribute('data-moveRemain',troop);
+        }
     } 
 }
 
-// function hexDistance(x1, y1, z1, x2, y2, z2) {
-//     return Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1), Math.abs(z2 - z1));
-// }
-
-function hexDistID(id1, id2) {
+function addTroop(id) {
     var polygon = $("svg polygon");
-	var x1 = parseInt(polygon[id1].getAttribute("data-x"));
-	var y1 = parseInt(polygon[id1].getAttribute("data-y"));
-	var z1 = parseInt(polygon[id1].getAttribute("data-z"));
-	var x2 = parseInt(polygon[id2].getAttribute("data-x"));
-	var y2 = parseInt(polygon[id2].getAttribute("data-y"));
-	var z2 = parseInt(polygon[id2].getAttribute("data-z"));
-    return Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1), Math.abs(z2 - z1));
+    var currentTroop = parseInt(polygon[id].getAttribute("data-troop"));
+    $(".popup").css({"display":"none"});
+    // addedTroop is easily undefied , since input element not triggered
+    if (!addedTroop) addedTroop = PlayerList[player].roundAddNum;
+    
+    polygon[id].setAttribute("data-troop",currentTroop+addedTroop);
+    PlayerList[player].roundAddNum -= addedTroop;
+    console.log(addedTroop);
+    console.log("after:"+PlayerList[player].roundAddNum);
+
+    refreshTroop();
 }
-
-function addTroop(event) {
+function passAddTroop(event){
     var polygon = $("svg polygon");
-    var texting = $("svg text");
     var id = parseInt($(event.target).attr("data-id"));
-    console.log("id="+id);
     var who = parseInt(polygon[id].getAttribute('data-player'));
     if (polygon[id].getAttribute('data-land') == "1" && player >= 0 && who==player) {
         var svg_coor = svg.getBoundingClientRect();
         var cx = parseInt(polygon[id].getAttribute('data-cx'))+svg_coor.left;
         var cy = parseInt(polygon[id].getAttribute('data-cy'))+svg_coor.top;
-        var currentTroop = parseInt(polygon[id].getAttribute("data-troop"));
-	    // troop++;
-        console.log("if loop");
-
-        $(".popup").css({"display":"block"});
+        
         roundAdd = PlayerList[player].roundAddNum;
-
         $(".popup input").attr('max',roundAdd);
         $(".popup input").attr('value',roundAdd);
+        $(".popup #range").text(roundAdd);
+
+        console.log(roundAddNum);
         $(".popup input").attr('onmousemove',"showAddValue(this.value)");
         $(".popup input").attr('onchange',"showAddValue(this.value)");
         popup_pos(cx,cy);
-
-        $(".popup #ok").one('click',function(){     
-        // if not set 'one', will add troops multiple times 
-        // (depends on times of click you have!!
-            $(".popup").css({"display":"none"});
-            polygon[id].setAttribute("data-troop",currentTroop+addedTroop);
-            PlayerList[player].roundAddNum -= addedTroop;
-            refreshTroop();
-        });
-        $(".popup #remove").click(function(){
-            $(".popup").css({"display":"none"});
-        });
         
-        $("footer #roundAddNum").text("Add Troop remain: "+PlayerList[player].roundAddNum);
-    }
+        $(".popup").css({"display":"block"});
 
+        return id;
+    } 
+    return -1;
 }
+
 
 function moveTroopFrom(event) {        // move troop from starting point
     var polygon = $("svg polygon");
     start_player = parseInt($(event.target).attr("data-player"));
-    if (start_player==player){
-        start_id = parseInt($(event.target).attr("data-id"));
+    start_id = parseInt($(event.target).attr("data-id"));
+    var moveRemain = parseInt(polygon[start_id].getAttribute('data-moveRemain'));
+    if (start_player==player && moveRemain>0){
         start_troop = parseInt(polygon[start_id].getAttribute("data-troop"));
         move_troop = start_troop;
-        console.log(":move_troop=",move_troop);
+        // console.log(":move_troop=",move_troop);
         return true;
     }
-        // console.log("from:"+ids);
     return false;
 }
 
 function moveTroopTo(event) {
     var polygon = $("svg polygon");
+    var moveRemain = parseInt(polygon[start_id].getAttribute('data-moveRemain'));
     end_id = parseInt($(event.target).attr("data-id"));
     end_troop = parseInt(polygon[end_id].getAttribute("data-troop"));
     for (var i=0;i<ids.length; i++){
@@ -292,8 +284,8 @@ function moveTroopTo(event) {
             var cx = parseInt(polygon[end_id].getAttribute('data-cx'))+svg_coor.left;
             var cy = parseInt(polygon[end_id].getAttribute('data-cy'))+svg_coor.top;
             $(".popup").css({"display":"block"});
-            $(".popup input").attr('max',start_troop);
-            $(".popup input").attr('value',start_troop);
+            $(".popup input").attr('max',moveRemain);
+            $(".popup input").attr('value',moveRemain);
             // $(".popup input").attr('onload',"showMoveValue(this.value)");
             $(".popup input").attr('onmousemove',"showMoveValue(this.value)");
             $(".popup input").attr('onchange',"showMoveValue(this.value)");
@@ -301,6 +293,7 @@ function moveTroopTo(event) {
 
             $(".popup #ok").one('click',function(){     
                 $(".popup").css({"display":"none"});
+                transferMoveRemain(start_id,move_troop);
                 attackJudge(start_id, end_id, move_troop);
                 refreshTroop();
             });
@@ -311,20 +304,48 @@ function moveTroopTo(event) {
     }}
 }
 
-// function returnPos(id) {
-//     var polygon = $("svg polygon");
-//     var coor = [];
-//     coor[0] = parseInt(polygon[id].getAttribute("data-x"));
-//     coor[1] = parseInt(polygon[id].getAttribute("data-y"));
-//     coor[2] = parseInt(polygon[id].getAttribute("data-z"));
-//     coor[3] = parseInt(polygon[id].getAttribute("data-id")); 
-//     return coor;
-// }
+function mapGenerator() {
+    groundMap = new Array(col_num);
+    for (var i = 0; i < row_num; i++) { 
+        groundMap[i] = [] 
+    }
+
+    for (var i = 0; i < col_num; i++) {
+        for (var j = 0; j < row_num; j++) {
+            var random = Math.random();
+            // 0: land, 1: water
+            if (random <= landPercent) { 
+                groundMap[i][j] = 0; 
+            } 
+            else { 
+                groundMap[i][j] = 1; 
+            }
+    }}
+    return groundMap;
+}
+// game start
+function playerGetLand(){
+    var polygon = $("svg polygon");
+    var initialLandNum = 4; // number of land each player start with
+    var idList = [];  // for choosing land
+    for (var i=0; i<polygon.length; i++) { // initialize land list
+        if (polygon[i].getAttribute("data-land")=="1") {idList.push(i); }
+    }   // assign land to users
+    for (var j=0; j<PlayerList.length; j++){ // user id start from 0
+        for (var i=0; i<initialLandNum; i++){ // iterate land list
+            var random = Math.round(Math.random()*(idList.length-1));
+            addLandIDs(j,idList[random]);
+            polygon[idList[random]].setAttribute('data-troop',5);
+            idList.pop(random);  // remove chosen land from waiting list
+        }
+    }
+    refreshTroop();
+} 
 
 function refreshTroop() {
     var polygon = $("svg polygon");
     var text = $("svg text");
-    console.log("refreshTroop");
+    // console.log("refreshTroop");
     for (var i = 0; i < polygon.length; i++) {
         var troop = polygon[i].getAttribute("data-troop");
         var playerID = polygon[i].getAttribute("data-player");
@@ -350,47 +371,46 @@ function refreshTroop() {
         }
     }
 }
+function refreshAdd(){
+    $("footer #roundAddNum").text("Add Troop remain: "+PlayerList[player].roundAddNum);
+}
+// function refreshAddRangeNum(){
 
-function mapGenerator() {
-    groundMap = new Array(col_num);
-    for (var i = 0; i < row_num; i++) { 
-        groundMap[i] = [] 
-    }
+//     $(".popup span#range").text(PlayerList[player].roundAddNum);
+// }
 
-    for (var i = 0; i < col_num; i++) {
-        for (var j = 0; j < row_num; j++) {
-            var random = Math.random();
-            // 0: land, 1: water
-            if (random <= landPercent) { 
-                groundMap[i][j] = 0; 
-            } 
-            else { 
-                groundMap[i][j] = 1; 
-            }
-    }}
-    return groundMap;
+function clearHighlight() {
+    var polygon = $("#hexGrid polygon");
+    for (var i = 0; i < polygon.length; i++) {
+        if (polygon[i].getAttribute('data-land') == "1") {addition = "fill:#00ff00";}
+        else if (polygon[i].getAttribute('data-land') == "0") {addition = "fill:#0000ff";}
+        var styles1 = 'opacity:0.5; stroke:black; stroke-width:1px; cursor:pointer;'+addition;
+        polygon[i].setAttribute('style', styles1);
+    } 
 }
 
+
+
+// find move
 function findMoveDist(cid) {
     var id1 = []; var id2 = []; ids = [];
 
     var polygon = $("svg polygon");
     for (var i = 0; i < polygon.length; i++) {
-    	var land = polygon[i].getAttribute("data-land"); // data-land=1:land, 0:water
-    	if (hexDistID(cid,i) == 1 && land == "1") {
+        var land = polygon[i].getAttribute("data-land"); // data-land=1:land, 0:water
+        if (hexDistID(cid,i) == 1 && land == "1") {
             id1.push(i);   // distance 1's id 
         }
     }
     for (var i = 0; i < polygon.length; i++) {
         for (var j = 0; j < id1.length; j++) {
             var node = id1[j];
-	    	var land = polygon[i].getAttribute("data-land");
-	    	if (hexDistID(i,node) == 1 && land == "1" && i != cid) {
+            var land = polygon[i].getAttribute("data-land");
+            if (hexDistID(i,node) == 1 && land == "1" && i != cid) {
                 id2.push(i);  // distance 2's id
             }
         }
     }
-
     function logging(v1, v2, set) {
         ids.push(v1);   // turn Set object to normal array
     }
@@ -398,40 +418,69 @@ function findMoveDist(cid) {
 
     return ids;
 }
+function showDist(event) {
+    // Normal land
+    var styles1 = 'fill:#00ff00; opacity:0.5; stroke:black; stroke-width:1px; cursor:pointer;';
+    // Starting point
+    var styles2 = 'fill:red; opacity:1; stroke:black; stroke-width:1px; cursor:pointer;';
+    // Sea move
+    var styles3 = 'fill:#ff00ff; opacity:0.5; stroke:black; stroke-width:1px; cursor:pointer;';
+    // land move
+    var styleDist = 'fill:red; opacity:0.5; stroke:black; stroke-width:1px; cursor:pointer;';
+    var polygon = $("#hexGrid polygon");
+    var cid = parseInt($(event.target).attr('data-id'));   // starting point id
+    ids = findMoveDist(cid);
+    for (var i = 0; i < ids.length; i++) {
+        polygon[ids[i]].setAttribute('style', styleDist);
+    }
 
+    $(event.target).attr('style', styles2);
+}
+function hexDistID(id1, id2) {
+    var polygon = $("svg polygon");
+    var x1 = parseInt(polygon[id1].getAttribute("data-x"));
+    var y1 = parseInt(polygon[id1].getAttribute("data-y"));
+    var z1 = parseInt(polygon[id1].getAttribute("data-z"));
+    var x2 = parseInt(polygon[id2].getAttribute("data-x"));
+    var y2 = parseInt(polygon[id2].getAttribute("data-y"));
+    var z2 = parseInt(polygon[id2].getAttribute("data-z"));
+    return Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1), Math.abs(z2 - z1));
+}
+
+// attack judge
 function attackJudge(attackID, defenseID, move) {
-	var polygon = $("svg polygon");	
+    var polygon = $("svg polygon"); 
     var result = [];
-	var user1 = parseInt(polygon[attackID].getAttribute("data-player"));
-	var user2 = parseInt(polygon[defenseID].getAttribute("data-player"));
-	var army1 = parseInt(polygon[attackID].getAttribute("data-troop"));
-	var army2 = parseInt(polygon[defenseID].getAttribute("data-troop"));
+    var user1 = parseInt(polygon[attackID].getAttribute("data-player"));
+    var user2 = parseInt(polygon[defenseID].getAttribute("data-player"));
+    var army1 = parseInt(polygon[attackID].getAttribute("data-troop"));
+    var army2 = parseInt(polygon[defenseID].getAttribute("data-troop"));
 
-	if (user1 == user2 || user2 == -1) {   // see if same person / not occupied
-		result[0] = army1 - move;     // move = troop moved    start
+    if (user1 == user2 || user2 == -1) {   // see if same person / not occupied
+        result[0] = army1 - move;     // move = troop moved    start
         result[1] = army2 + move;       // end
 
         // user move all troops from one place to another
-		if (result[0] == 0) deleteLandIDs(user1,attackID);    
+        if (result[0] == 0) deleteLandIDs(user1,attackID);    
         // user get unoccupied land
-		if (user2 == -1) addLandIDs(user1,defenseID);
-	} else if (user1 != user2){    
+        if (user2 == -1) addLandIDs(user1,defenseID);
+    } else if (user1 != user2){    
         // formula calculate casualty
-		var attackRemain = Math.round(move - army2 * defensePercent);
-		var defenseRemain = Math.round(army2 - move * attackPercent);
-		if (attackRemain < 0) attackRemain = 0;
+        var attackRemain = Math.round(move - army2 * defensePercent);
+        var defenseRemain = Math.round(army2 - move * attackPercent);
+        if (attackRemain < 0) attackRemain = 0;
         else if (defenseRemain<0)  defenseRemain=0;
 
-		if (defenseRemain == 0 && attackRemain>0) {
+        if (defenseRemain == 0 && attackRemain>0) {
             // Attack wins!
-			result[0] = army1 - move;
+            result[0] = army1 - move;
             result[1] = attackRemain;
             deleteLandIDs(user2,defenseID);
             addLandIDs(user1,defenseID);
 
-		} else if(defenseRemain>0) {
+        } else if(defenseRemain>0) {
             // Defense wins!
-			result[0] = army1 -move + attackRemain;		
+            result[0] = army1 -move + attackRemain;     
             result[1] = defenseRemain;
             if (result[0] == 0) { 
                 // all attack die, no army left from starting point
@@ -443,29 +492,11 @@ function attackJudge(attackID, defenseID, move) {
             deleteLandIDs(user1,attackID);
             deleteLandIDs(user2,defenseID);
         }
-	}
-	
-	polygon[attackID].setAttribute('data-troop', result[0]);
-	polygon[defenseID].setAttribute('data-troop', result[1]);
-}
-// game start
-function playerGetLand(){
-    var polygon = $("svg polygon");
-    var initialLandNum = 4; // number of land each player start with
-    var idList = [];  // for choosing land
-    for (var i=0; i<polygon.length; i++) { // initialize land list
-        if (polygon[i].getAttribute("data-land")=="1") {idList.push(i); }
-    }   // assign land to users
-    for (var j=0; j<PlayerList.length; j++){ // user id start from 0
-        for (var i=0; i<initialLandNum; i++){ // iterate land list
-            var random = Math.round(Math.random()*(idList.length-1));
-            addLandIDs(j,idList[random]);
-            polygon[idList[random]].setAttribute('data-troop',5);
-            idList.pop(random);  // remove chosen land from waiting list
-        }
     }
-    refreshTroop();
-} 
+    
+    polygon[attackID].setAttribute('data-troop', result[0]);
+    polygon[defenseID].setAttribute('data-troop', result[1]);
+}
 
 function addLandIDs(user,id){  // user=user id; id=land id
     var polygon = $("svg polygon"); 
@@ -481,6 +512,11 @@ function deleteLandIDs(user,id){
     }
     PlayerList[user].land--;
     polygon[id].setAttribute('data-player',-1);
+}
+function transferMoveRemain(start_id,move){
+    var polygon = $("svg polygon"); 
+    var moveRemain = parseInt(polygon[start_id].getAttribute('data-moveRemain'));
+    polygon[start_id].setAttribute("data-moveRemain",moveRemain-move);
 }
 
 // drag and drop, resize
