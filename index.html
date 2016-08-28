@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="js/jquery-3.1.0.min.js"></script>
     <link rel="stylesheet" href="css/font-awesome/css/font-awesome.min.css">
     <link rel="stylesheet" href="css/game.css">
     
@@ -10,45 +11,44 @@
 </head>
     
 <body>
-	<div class="page-wrapper">
-		<header>
-			<button id="add">Add Troop</button>
-			<button id="finishAdd">Finish Adding</button>
-			<button id="stop">Stop All</button>
-			<button id="move">Move</button>
-			<button id="player1">Player1</button>
-			<button id="player2">Player2</button>
-			<button id="commit">Next Round</button>
-		</header>
-	
-		<!-- preserveAspectRatio="xMinYMin meet"  -->
-		<main id="frame">
-			<svg id="hexGrid"  version="1.1" viewBox="0 0 649 580" width="650" height="580" xmlns="http://www.w3.org/2000/svg"> </svg>  
-			<!-- viewBox should be calculated according to polygon numbers, each polygon assigned with fixed width and height -->
-			<div class="popup">
-				<div class="bar">
-					<i class="icon-remove" id="remove" style="float:right"></i> 
-				</div>
-				<div class="content">
-					<input type="range" min="0" step="1" />
-					<span id="range"></span>
-					<button id="ok">OK</button>
-				</div>
-			</div>
-		</main>
+    <div class="page-wrapper">
+    <header>
+        <button id="stop">Stop All</button>
+        <button id="add">Add Troop</button>
+        <button id="move">Move</button>
+        <button id="player1">Player1</button>
+        <button id="player2">Player2</button>
+        <button id="commit">Next Round</button>
+    </header>
+    <!-- preserveAspectRatio="xMinYMin meet"  -->
+    <main id="frame">
+        <svg id="hexGrid"  version="1.1" viewBox="0 0 649 580" width="650" height="580" xmlns="http://www.w3.org/2000/svg">
+        </svg>  <!-- viewBox should be calculated according to polygon numbers, each polygon assigned with fixed width and height -->
+        <div class="popup">
+            <div class="bar">
+                <span id="title"></span> 
+                <i class="icon-remove" id="remove" style="float:right"></i> 
+            </div>
+            <div class="content">
+                <input type="range" min="0" step="1" />
+                <span id="range"></span>
+                <button id="ok">OK</button>
+            </div>
+        </div>
+    </main>
 
-		<footer>
-			<p id="roundAddNum"></p>
-		</footer>
-	</div>
-    
-	<script src="js/jquery-3.1.0.min.js"></script>
-    <script type="text/javascript" src="js/renderer.js"> </script>
-	<script type="text/javascript" src="js/grids.js"> </script>
-    <script type="text/javascript" src="js/players.js"> </script>
-    <script type="text/javascript" src="js/landsAssigner.js"> </script>
-    <script type="text/javascript" src="js/distanceCalculator.js"> </script>
-    <script type="text/javascript" src="js/troopManager.js"> </script>    
-    <script type="text/javascript" src="js/main.js"> </script>
+    <footer>
+        <p id="roundAddNum"></p>
+    </footer>
+</div>
+
+<script src="js/jquery-3.1.0.min.js"></script>
+<script type="text/javascript" src="js/renderer.js"> </script>
+<script type="text/javascript" src="js/grids.js"> </script>
+<script type="text/javascript" src="js/players.js"> </script>
+<script type="text/javascript" src="js/landsAssigner.js"> </script>
+<script type="text/javascript" src="js/distanceCalculator.js"> </script>
+<script type="text/javascript" src="js/troopManager.js"> </script>    
+<script type="text/javascript" src="js/main.js"> </script>
 
 </body>
