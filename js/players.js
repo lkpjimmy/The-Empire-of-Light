@@ -1,6 +1,5 @@
 // Constructor
-PlayersInit = function(id, color, troop, land, roundAddNum)
-{
+PlayersInit = function (id, color, troop, land, roundAddNum) {
     this.id = id;
     this.color = color;
     this.troop = troop;
