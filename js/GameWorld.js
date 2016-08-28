@@ -41,7 +41,10 @@ function gameLoop() {
     playerGetLand();
     roundBegin();
 
-    // $(document).click(function(){console.log(gameMode);});
+    $(document).click(function(){console.log(gameMode);
+            // console.log("added",addedTroop);
+            // console.log("moved",move_troop);
+    });
 
     $("button#player1").css({"background-color":"yellow"}); player = 0;
     $(window).resize(function(){
@@ -55,7 +58,6 @@ function gameLoop() {
         refreshVar = setInterval(refreshAdd,500);
         $("button").not("button#player1, button#player2").css({"background-color":"white"});
         $("button#add").css({"background-color":"yellow"});
-        // $("#hexGrid polygon, #hexGrid text").off();
     });
     
     // popup window
@@ -86,13 +88,6 @@ function gameLoop() {
         if (gameMode=="move") clearHighlight();  
     });
 
-
-    $("button#finishAdd").click(function(){
-        gameMode = "finishAdd";
-        $("button").not("button#player1, button#player2").css({"background-color":"white"});
-        $("button#finishAdd").css({"background-color":"yellow"});
-        renewMoveRemain();
-    });
     $("button#stop").click(function() {
         gameMode="stop";
         clearInterval(refreshVar);  // clear add remain
@@ -104,14 +99,17 @@ function gameLoop() {
     });
 
     $("button#move").click(function() {
-        gameMode = "move";
-        clearInterval(refreshVar);  // clear add remain
-        $("footer #roundAddNum").text("");
+        if (PlayerList[player].roundAddNum == 0){
+            gameMode = "move";
+            clearInterval(refreshVar);  // clear add remain
+            renewMoveRemain();  // ensure all troops added
+            $("footer #roundAddNum").text("");
 
-        $("button").not("button#player1, button#player2").css({"background-color":"white"});
-        // Deal with $(svg text) later
-        $("button#move").css({"background-color":"yellow"}); 
-        // $("#hexGrid polygon, #hexGrid text").off();
+            $("button").not("button#player1, button#player2").css({"background-color":"white"});
+            // Deal with $(svg text) later
+            $("button#move").css({"background-color":"yellow"}); 
+            // $("#hexGrid polygon, #hexGrid text").off();
+        } else { alert("Not complete add troop step!"); }
     });
 
     $("button#player1").click(function() { 
@@ -257,12 +255,14 @@ function passAddTroop(event){
         var svg_coor = svg.getBoundingClientRect();
         var cx = parseInt(polygon[id].getAttribute('data-cx'))+svg_coor.left;
         var cy = parseInt(polygon[id].getAttribute('data-cy'))+svg_coor.top;
-        
+        // change previous addedTroop value to avoid error
         roundAdd = PlayerList[player].roundAddNum;
+        if (addedTroop>roundAdd || !addedTroop) {addedTroop = roundAdd;}
+        document.getElementById("range").innerHTML = addedTroop;
+
         $(".popup input").attr('max',roundAdd);
-        $(".popup input").attr('value',roundAdd);
-        $(".popup #range").text(roundAdd);
-        $(".popup .bar").text("add troops");
+        $(".popup input").attr('value',addedTroop);
+        $(".popup .bar #title").text("add troops");
 
         // console.log(roundAddNum);
         $(".popup input").attr('onmousemove',"showAddValue(this.value)");
@@ -284,8 +284,13 @@ function moveTroopFrom(event) {        // move troop from starting point
     var moveRemain = parseInt(polygon[start_id].getAttribute('data-moveRemain'));
     if (start_player==player && moveRemain>0){
         start_troop = parseInt(polygon[start_id].getAttribute("data-troop"));
-        move_troop = moveRemain;
-        // console.log(":move_troop=",move_troop);
+        
+        if (!move_troop) {move_troop = addedTroop;}  // make popup text responsive
+        if (move_troop>moveRemain) {move_troop = moveRemain;}
+        document.getElementById("range").innerHTML = move_troop;
+        // console.log("move_troop= ",move_troop);
+        // console.log("range="+$("#range").text());
+
         return true;
     }
     return false;
@@ -303,9 +308,8 @@ function passMoveTroop(event){
             var cy = parseInt(polygon[end_id].getAttribute('data-cy'))+svg_coor.top;
             $(".popup").css({"display":"block"});
             $(".popup input").attr('max',moveRemain);
-            $(".popup input").attr('value',moveRemain);
-            $(".popup #range").text(moveRemain);
-            $(".popup .bar").text("move troops");
+            $(".popup input").attr('value',move_troop);
+            $(".popup .bar #title").text("move troops");
 
             // move_troop=moveRemain if mouse not moved
             $(".popup input").attr('onmousemove',"showMoveValue(this.value)");
@@ -365,7 +369,7 @@ function playerGetLand(){
 function refreshTroop() {
     var polygon = $("svg polygon");
     var text = $("svg text");
-    console.log("refreshTroop");
+    // console.log("refreshTroop");
     for (var i = 0; i < polygon.length; i++) {
         var troop = parseInt(polygon[i].getAttribute("data-troop"));
         var playerID = polygon[i].getAttribute("data-player");
@@ -389,15 +393,15 @@ function refreshTroop() {
                 text[i].setAttribute("x", (x - radius * 0.35));
             }
             text[i].style.display = "block"; 
-            console.log("moving",moveRemain,i);
+            // console.log("moving",moveRemain,i);
             if (gameMode=="move"){
                 if (moveRemain == 0){
-                    console.log("grey");
+                    // console.log("grey");
                     var styles1 = 'fill:grey; opacity:0.5; stroke:black; stroke-width:1px; cursor:pointer;';
                     polygon[i].setAttribute('style',styles1);
                 } 
                 else if (moveRemain>0){
-                    console.log("black");
+                    // console.log("black");
                     var styles1 = 'fill:#00ff00; opacity:0.5; stroke:black; stroke-width:1px; cursor:pointer;';
                     polygon[i].setAttribute('style',styles1);
                 }
