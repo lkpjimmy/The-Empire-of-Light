@@ -54,16 +54,15 @@ function gameLoop() {
     refreshVar = setInterval(refreshAdd,500);
     // update news
     $("button#add").click(function() {
-        var id; gameMode = "add";
+        gameMode = "add";
         refreshVar = setInterval(refreshAdd,500);
         $("button").not("button#player1, button#player2").css({"background-color":"white"});
         $("button#add").css({"background-color":"yellow"});
     });
     
     // popup window
-    var moveFlag = 0; var flag2, idAdd; 
+    var moveFlag = 0; var flag2=0, idAdd; 
     $("#hexGrid polygon, #hexGrid text").on('click', function(event){
-        // console.log("hihi");
         if (gameMode=="add"){ idAdd = passAddTroop(event); }
             // console.log("added mode1");
         else if (gameMode=="move"){
@@ -72,16 +71,21 @@ function gameLoop() {
                 if (moveTroopFrom(event)){  showDist(event); moveFlag = 1;} 
                 else { moveFlag = 0;} // fail
                 // second step, pass id after click ok
-            } else if (moveFlag == 1) {flag2 = passMoveTroop(event); moveFlag = 0;}
+
+            } else if (moveFlag == 1) {
+                flag2 = passMoveTroop(event); moveFlag = 0;
+                // if presoutside region, clear hightlight
+                if (flag2 == -1) {clearHighlight(); flag2 = 0;} 
+            }
                 // console.log("transfer mode1");
         }
     });
     $(".popup #ok").on('click',function(){ 
         if (gameMode=="add" && idAdd!=-1) {
             addTroop(idAdd); 
-        }   else if (gameMode=="move" && flag2==1) {
-            moveTroopTo(); 
-        clearHighlight();  refreshTroop();}
+        } else if (gameMode=="move" && flag2==1) {
+            moveTroopTo(); clearHighlight(); refreshTroop();
+        }
     });
     $(".popup #remove").click(function(){
         $(".popup").css({"display":"none"});
@@ -95,7 +99,6 @@ function gameLoop() {
 
         $("button").not("button#player1, button#player2").css({"background-color":"white"});
         $("button#stop").css({"background-color":"yellow"});
-        $("#hexGrid polygon, #hexGrid text").off();
     });
 
     $("button#move").click(function() {
@@ -106,9 +109,7 @@ function gameLoop() {
             $("footer #roundAddNum").text("");
 
             $("button").not("button#player1, button#player2").css({"background-color":"white"});
-            // Deal with $(svg text) later
             $("button#move").css({"background-color":"yellow"}); 
-            // $("#hexGrid polygon, #hexGrid text").off();
         } else { alert("Not complete add troop step!"); }
     });
 
@@ -221,6 +222,7 @@ function roundBegin(){
         PlayerList[i].roundAddNum = 5;
     }
     renewMoveRemain();
+    refreshTroop();
 }
 function renewMoveRemain(){
     var polygon = $("svg polygon");
@@ -251,7 +253,9 @@ function passAddTroop(event){
     var polygon = $("svg polygon");
     var id = parseInt($(event.target).attr("data-id"));
     var who = parseInt(polygon[id].getAttribute('data-player'));
+            console.log(player,who,polygon[id].getAttribute('data-land'));
     if (polygon[id].getAttribute('data-land') == "1" && player >= 0 && who==player) {
+
         var svg_coor = svg.getBoundingClientRect();
         var cx = parseInt(polygon[id].getAttribute('data-cx'))+svg_coor.left;
         var cy = parseInt(polygon[id].getAttribute('data-cy'))+svg_coor.top;
@@ -514,6 +518,7 @@ function attackJudge(attackID, defenseID, move) {
             result[1] = attackRemain;
             deleteLandIDs(user2,defenseID);
             addLandIDs(user1,defenseID);
+            transferMoveRemain(defenseID,army2); // all defense die
 
         } else if(defenseRemain>0) {
             // Defense wins!
@@ -528,6 +533,7 @@ function attackJudge(attackID, defenseID, move) {
             result[0]=0; result[1]=0;
             deleteLandIDs(user1,attackID);
             deleteLandIDs(user2,defenseID);
+            transferMoveRemain(defenseID,army2); // all defense die
         }
     }
     
@@ -550,10 +556,10 @@ function deleteLandIDs(user,id){
     PlayerList[user].land--;
     polygon[id].setAttribute('data-player',-1);
 }
-function transferMoveRemain(start_id,move){
+function transferMoveRemain(target_id,move){
     var polygon = $("svg polygon"); 
-    var moveRemain = parseInt(polygon[start_id].getAttribute('data-moveRemain'));
-    polygon[start_id].setAttribute("data-moveRemain",moveRemain-move);
+    var moveRemain = parseInt(polygon[target_id].getAttribute('data-moveRemain'));
+    polygon[target_id].setAttribute("data-moveRemain",moveRemain-move);
 }
 
 // drag and drop, resize
