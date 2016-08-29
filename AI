@@ -10,6 +10,17 @@ for (different regions)
 	elseif (hard defense)
 		base low: no 1 troop defense
 
+Analyse myself:
+for (different regions)
+	if (easy defense many base)
+		defense high, base low
+	else if (difficult defense many base)
+		defense middle, base low
+	else if (easy defense fewer base)
+		defense middle, base high
+	else if (difficult defense fewer base)
+		defense low, base low
+
 Analyse enemy:
 for (different regions)
 	if (many base less army)
@@ -36,8 +47,13 @@ for (different regions)
 	calculate exact steps
 
 
+--------------------------
+hexagon each layer number: 1 > 6 > 12 > 24
 
 
+determine easy defense more land:
+	in two distance see the percentage of 1 distance away land blocked 
+	count number of lands in this area
 
 
 
