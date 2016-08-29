@@ -1,0 +1,45 @@
+divide land occupied into grids by distance 2
+weighting: base, attack, defense
+
+Analyse myself:
+for (different regions)
+	if (easy defense more land)
+		base high: use 1 troop to occupy lands
+	elseif (easy defense fewer land)
+		base middle: some 1 troop occupy land
+	elseif (hard defense)
+		base low: no 1 troop defense
+
+Analyse enemy:
+for (different regions)
+	if (many base less army)
+		attack high, defense low
+	elseif (many base many army)
+		attack middle, defense middle
+	elseif (less base less army)
+		attack middle, defense low
+	elseif (less base many army)
+		attack low, defense high
+
+Detail analyse:
+	strategy id: {attack, defense, base, need} {0:low, 1:middle, 2:high}
+	eg.	all attack: [2,0,0]
+			all defense: [0,0,2]
+			base and attack: [1,0,1]
+
+for (different regions)
+	mark = attack + defense + base
+	according to mark, distribute troops to satisfy the needs		
+
+for (different regions)
+	carry on corresponding strategy according to current troops
+	calculate exact steps
+
+
+
+
+
+
+
+
+
