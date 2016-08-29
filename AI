@@ -1,3 +1,5 @@
+## Decision tree
+
 divide land occupied into grids by distance 2
 weighting: base, attack, defense
 
@@ -34,6 +36,7 @@ for (different regions)
 
 Detail analyse:
 	strategy id: {attack, defense, base, need} {0:low, 1:middle, 2:high}
+			// need = troops needed to complete task in that region
 	eg.	all attack: [2,0,0]
 			all defense: [0,0,2]
 			base and attack: [1,0,1]
@@ -48,13 +51,24 @@ for (different regions)
 
 
 --------------------------
-hexagon each layer number: 1 > 6 > 12 > 24
+## Determination rules
 
+number of hexagons in each layer (from in to out): 1 > 6 > 12 > 24
 
-determine easy defense more land:
-	in two distance see the percentage of 1 distance away land blocked 
-	count number of lands in this area
+count number of lands within region of distance 2 from all element in the same region
 
+defense:
+	if the opening (distance=3) in that region:
+		>5:difficult, <=5:easy
+
+army enemy/alliance:
+	number of troops in that region 
+
+land area:
+	number of land in that region
+
+base:
+	number of unoccupied lands in that region
 
 
 
